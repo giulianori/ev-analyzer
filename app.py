@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="EV Analyzer", layout="wide")
 
-st.title("🚗 Analisi Consumi EV (stile Tesla)")
+st.title("🚗 EV Energy Analyzer ")
 
 # Upload file
 uploaded_file = st.file_uploader("daticsv2.csv", type=["csv"])
