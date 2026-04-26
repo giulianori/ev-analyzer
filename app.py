@@ -1,20 +1,42 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
+from datetime import datetime
 
+# =========================
+# CONFIG
+# =========================
 st.set_page_config(page_title="EV Analyzer", layout="wide")
 
-st.title("🚗 EV Energy Analyzer ")
+st.title("🚗 EV Energy Analyzer")
+st.markdown("""
+Analizza i dati del tuo veicolo elettrico:
+- ⚡ Consumo reale
+- 🔋 Energia recuperata
+- 📊 Storico viaggi
+""")
 
-# Upload file
-uploaded_file = st.file_uploader("daticsv2.csv", type=["csv"])
+# =========================
+# FILE STORICO
+# =========================
+file_storico = "storico_viaggi.csv"
+
+# =========================
+# UPLOAD
+# =========================
+uploaded_file = st.file_uploader("Carica file CSV", type=["csv"])
 
 if uploaded_file:
 
+    st.success("File caricato correttamente ✔️")
+
+    # =========================
+    # LETTURA
+    # =========================
     df = pd.read_csv(uploaded_file, sep=';', encoding='utf-8-sig')
     df.columns = df.columns.str.strip()
 
-    # conversione numerica
     for col in ['Km', 'Distanza', 'Consumo', 'Velocita']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
@@ -38,12 +60,10 @@ if uploaded_file:
 
     consumo_reale = energia_netta / distanza * 100
 
-    # input batteria
-    batteria = st.sidebar.slider("Capacità batteria (kWh)", 30, 100, 44)
+    batteria = st.sidebar.slider("Capacità batteria (kWh)", 30, 120, 50)
 
     autonomia = batteria / consumo_reale * 100
 
-    # smoothing velocità
     df['Velocita_smooth'] = df['Velocita'].rolling(5).mean()
     df = df.dropna()
 
@@ -60,27 +80,76 @@ if uploaded_file:
     st.metric("Consumo medio", f"{consumo_reale:.1f} kWh/100km")
 
     # =========================
-    # GRAFICO
+    # GRAFICO VIAGGIO
     # =========================
     fig, ax1 = plt.subplots(figsize=(10,5))
 
-    # aree
-    ax1.fill_between(df['Km'], 0, df['Energia_pos'].cumsum()/1000, alpha=0.3)
-    ax1.fill_between(df['Km'], 0, df['Energia_neg'].cumsum()/1000, alpha=0.3)
+    ax1.plot(df['Km'], df['Energia_cum_kWh'], linewidth=3)
+    ax1.fill_between(df['Km'], 0, df['Energia_pos'].cumsum()/1000, alpha=0.2)
+    ax1.fill_between(df['Km'], 0, df['Energia_neg'].cumsum()/1000, alpha=0.2)
 
-    # linea energia
-    ax1.plot(df['Km'], df['Energia_cum_kWh'], linewidth=2)
-
-    ax1.set_xlabel("Km")
+    ax1.set_xlabel("Distanza (km)")
     ax1.set_ylabel("Energia (kWh)")
     ax1.grid()
 
-    # velocità
     ax2 = ax1.twinx()
     ax2.plot(df['Km'], df['Velocita_smooth'], linestyle='--')
-    ax2.set_ylabel("Velocità")
+    ax2.set_ylabel("Velocità (km/h)")
 
     st.pyplot(fig)
+
+    # =========================
+    # SALVA STORICO
+    # =========================
+    nuovo_viaggio = pd.DataFrame([{
+        "Data": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "Distanza_km": round(distanza, 2),
+        "Consumo_kWh": round(energia_tot, 2),
+        "Recupero_kWh": round(energia_rec, 2),
+        "Netto_kWh": round(energia_netta, 2),
+        "Consumo_reale_kWh_100km": round(consumo_reale, 2),
+        "Autonomia_km": round(autonomia, 0)
+    }])
+
+    if os.path.exists(file_storico):
+        storico = pd.read_csv(file_storico)
+        storico = pd.concat([storico, nuovo_viaggio], ignore_index=True)
+    else:
+        storico = nuovo_viaggio
+
+    storico.to_csv(file_storico, index=False)
+
+# =========================
+# MOSTRA STORICO
+# =========================
+if os.path.exists(file_storico):
+
+    storico = pd.read_csv(file_storico)
+
+    st.subheader("📚 Storico Viaggi")
+    st.dataframe(storico)
+
+    # Download
+    csv = storico.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        "📥 Scarica Storico CSV",
+        csv,
+        "storico_viaggi.csv",
+        "text/csv"
+    )
+
+    # =========================
+    # GRAFICO STORICO
+    # =========================
+    st.subheader("📈 Trend Consumo Reale")
+
+    fig2, ax = plt.subplots(figsize=(10,4))
+    ax.plot(storico.index + 1, storico["Consumo_reale_kWh_100km"], marker='o')
+    ax.set_xlabel("Viaggio #")
+    ax.set_ylabel("kWh/100km")
+    ax.grid()
+
+    st.pyplot(fig2)
 
 else:
     st.info("Carica un file CSV per iniziare")
