@@ -21,6 +21,7 @@ Analizza i dati del tuo veicolo elettrico:
 # =========================
 if "storico" not in st.session_state:
     st.session_state["storico"] = pd.DataFrame(columns=[
+        "ID_Viaggio",
         "Data",
         "Distanza_km",
         "Consumo_kWh",
@@ -106,10 +107,15 @@ if uploaded_file:
 
     st.pyplot(fig)
 
-  # =========================
-# SALVA STORICO PERSONALE
 # =========================
+# SALVA STORICO PERSONALE + ANTI-DUPLICATO
+# =========================
+
+# Firma univoca del viaggio
+id_viaggio = f"{round(distanza,2)}_{round(energia_tot,2)}_{round(energia_rec,2)}"
+
 nuovo_viaggio = pd.DataFrame([{
+    "ID_Viaggio": id_viaggio,
     "Data": datetime.now().strftime("%Y-%m-%d %H:%M"),
     "Distanza_km": round(distanza, 2),
     "Consumo_kWh": round(energia_tot, 2),
@@ -119,10 +125,15 @@ nuovo_viaggio = pd.DataFrame([{
     "Autonomia_km": round(autonomia, 0)
 }])
 
-st.session_state["storico"] = pd.concat(
-    [st.session_state["storico"], nuovo_viaggio],
-    ignore_index=True
-) 
+# Controllo duplicato
+if id_viaggio not in st.session_state["storico"]["ID_Viaggio"].values:
+    st.session_state["storico"] = pd.concat(
+        [st.session_state["storico"], nuovo_viaggio],
+        ignore_index=True
+    )
+    st.success("Viaggio salvato nello storico ✔️")
+else:
+    st.warning("Questo viaggio è già presente nello storico ⚠️")
 # =========================
 # MOSTRA STORICO PERSONALE
 # =========================
