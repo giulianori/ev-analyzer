@@ -145,8 +145,13 @@ if not storico.empty:
     # Trend consumi
     st.subheader("📈 Trend Consumo Reale")
 
-    fig2, ax = plt.subplots(figsize=(10,4))
-    ax.plot(storico.index + 1, storico["Consumo_reale_kWh_100km"], marker='o')
+    fig2, ax = plt.subplots(figsize=(10, 4))
+    ax.plot(
+        storico.index + 1,
+        storico["Consumo_reale_kWh_100km"],
+        marker="o"
+    )
+
     ax.set_xlabel("Viaggio #")
     ax.set_ylabel("kWh/100km")
     ax.grid()
