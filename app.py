@@ -110,30 +110,30 @@ if uploaded_file:
 # =========================
 # SALVA STORICO PERSONALE + ANTI-DUPLICATO
 # =========================
+if uploaded_file is not None and not df.empty:
 
-# Firma univoca del viaggio
-id_viaggio = f"{round(distanza,2)}_{round(energia_tot,2)}_{round(energia_rec,2)}"
+    # Firma univoca del viaggio
+    id_viaggio = f"{round(distanza,2)}_{round(energia_tot,2)}_{round(energia_rec,2)}"
 
-nuovo_viaggio = pd.DataFrame([{
-    "ID_Viaggio": id_viaggio,
-    "Data": datetime.now().strftime("%Y-%m-%d %H:%M"),
-    "Distanza_km": round(distanza, 2),
-    "Consumo_kWh": round(energia_tot, 2),
-    "Recupero_kWh": round(energia_rec, 2),
-    "Netto_kWh": round(energia_netta, 2),
-    "Consumo_reale_kWh_100km": round(consumo_reale, 2),
-    "Autonomia_km": round(autonomia, 0)
-}])
+    nuovo_viaggio = pd.DataFrame([{
+        "ID_Viaggio": id_viaggio,
+        "Data": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "Distanza_km": round(distanza, 2),
+        "Consumo_kWh": round(energia_tot, 2),
+        "Recupero_kWh": round(energia_rec, 2),
+        "Netto_kWh": round(energia_netta, 2),
+        "Consumo_reale_kWh_100km": round(consumo_reale, 2),
+        "Autonomia_km": round(autonomia, 0)
+    }])
 
-# Controllo duplicato
-if id_viaggio not in st.session_state["storico"]["ID_Viaggio"].values:
-    st.session_state["storico"] = pd.concat(
-        [st.session_state["storico"], nuovo_viaggio],
-        ignore_index=True
-    )
-    st.success("Viaggio salvato nello storico ✔️")
-else:
-    st.warning("Questo viaggio è già presente nello storico ⚠️")
+    if id_viaggio not in st.session_state["storico"]["ID_Viaggio"].values:
+        st.session_state["storico"] = pd.concat(
+            [st.session_state["storico"], nuovo_viaggio],
+            ignore_index=True
+        )
+        st.success("Viaggio salvato nello storico ✔️")
+    else:
+        st.warning("Questo viaggio è già presente nello storico ⚠️")
 # =========================
 # MOSTRA STORICO PERSONALE
 # =========================
