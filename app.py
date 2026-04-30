@@ -16,11 +16,19 @@ Analizza i dati del tuo veicolo elettrico:
 - 🔋 Energia recuperata
 - 📊 Storico viaggi
 """)
-
 # =========================
-# FILE STORICO
+# STORICO PERSONALE (sessione utente)
 # =========================
-file_storico = "storico_viaggi.csv"
+if "storico" not in st.session_state:
+    st.session_state["storico"] = pd.DataFrame(columns=[
+        "Data",
+        "Distanza_km",
+        "Consumo_kWh",
+        "Recupero_kWh",
+        "Netto_kWh",
+        "Consumo_reale_kWh_100km",
+        "Autonomia_km"
+    ])
 
 # =========================
 # UPLOAD
@@ -98,45 +106,56 @@ if uploaded_file:
 
     st.pyplot(fig)
 
-    # =========================
-    # SALVA STORICO
-    # =========================
-    nuovo_viaggio = pd.DataFrame([{
-        "Data": datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "Distanza_km": round(distanza, 2),
-        "Consumo_kWh": round(energia_tot, 2),
-        "Recupero_kWh": round(energia_rec, 2),
-        "Netto_kWh": round(energia_netta, 2),
-        "Consumo_reale_kWh_100km": round(consumo_reale, 2),
-        "Autonomia_km": round(autonomia, 0)
-    }])
-
-    if os.path.exists(file_storico):
-        storico = pd.read_csv(file_storico)
-        storico = pd.concat([storico, nuovo_viaggio], ignore_index=True)
-    else:
-        storico = nuovo_viaggio
-
-    storico.to_csv(file_storico, index=False)
-
+  # =========================
+# SALVA STORICO PERSONALE
 # =========================
-# MOSTRA STORICO
+nuovo_viaggio = pd.DataFrame([{
+    "Data": datetime.now().strftime("%Y-%m-%d %H:%M"),
+    "Distanza_km": round(distanza, 2),
+    "Consumo_kWh": round(energia_tot, 2),
+    "Recupero_kWh": round(energia_rec, 2),
+    "Netto_kWh": round(energia_netta, 2),
+    "Consumo_reale_kWh_100km": round(consumo_reale, 2),
+    "Autonomia_km": round(autonomia, 0)
+}])
+
+st.session_state["storico"] = pd.concat(
+    [st.session_state["storico"], nuovo_viaggio],
+    ignore_index=True
+) 
 # =========================
-if os.path.exists(file_storico):
+# MOSTRA STORICO PERSONALE
+# =========================
+storico = st.session_state["storico"]
 
-    storico = pd.read_csv(file_storico)
+if not storico.empty:
 
-    st.subheader("📚 Storico Viaggi")
+    st.subheader("📚 Storico Viaggi (solo tua sessione)")
     st.dataframe(storico)
 
-    # Download
-    csv = storico.to_csv(index=False).encode('utf-8')
+    # Download CSV personale
+    csv = storico.to_csv(index=False).encode("utf-8")
     st.download_button(
         "📥 Scarica Storico CSV",
         csv,
         "storico_viaggi.csv",
         "text/csv"
     )
+
+    # Trend consumi
+    st.subheader("📈 Trend Consumo Reale")
+
+    fig2, ax = plt.subplots(figsize=(10,4))
+    ax.plot(storico.index + 1, storico["Consumo_reale_kWh_100km"], marker='o')
+    ax.set_xlabel("Viaggio #")
+    ax.set_ylabel("kWh/100km")
+    ax.grid()
+
+    st.pyplot(fig2)
+
+else:
+    st.info("Carica un file CSV per iniziare")
+
 
     # =========================
     # GRAFICO STORICO
