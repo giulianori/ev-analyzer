@@ -172,6 +172,31 @@ if not storico.empty:
 else:
     st.info("Carica un file CSV per iniziare")
 
+# =========================
+# DASHBOARD KPI
+# =========================
+if not storico.empty:
 
+    st.subheader("📊 Dashboard EV")
+
+    km_tot = storico["Distanza_km"].sum()
+    energia_totale = storico["Consumo_kWh"].sum()
+    recupero_totale = storico["Recupero_kWh"].sum()
+    consumo_medio = storico["Consumo_reale_kWh_100km"].mean()
+
+    best_trip = storico["Consumo_reale_kWh_100km"].min()
+    worst_trip = storico["Consumo_reale_kWh_100km"].max()
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    col1.metric("Km totali", f"{km_tot:.0f} km")
+    col2.metric("Energia", f"{energia_totale:.1f} kWh")
+    col3.metric("Recupero", f"{recupero_totale:.1f} kWh")
+    col4.metric("Consumo medio", f"{consumo_medio:.1f} kWh/100km")
+
+    col5, col6 = st.columns(2)
+
+    col5.metric("🟢 Best trip", f"{best_trip:.1f} kWh/100km")
+    col6.metric("🔴 Worst trip", f"{worst_trip:.1f} kWh/100km")
    
     
